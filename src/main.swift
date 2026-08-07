@@ -184,33 +184,36 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        // Status-bar title: charging watts · charger watts · time to full · battery % · temp
+        // Status-bar title. Always show every number; only the leading glyph changes
+        // to convey state (⚡ charging · 🔌 holding · ⏸ paused · 🔋 on battery).
         let title: String
         let chargeW = String(format: "%.0f", b.chargeWatts)
         let chargerW = peakAdapterWatts > 0 ? "\(peakAdapterWatts)" : "—"
         let hot = b.temperatureC >= hotThresholdC // charging tends to throttle/pause when hot
-        // Temperature suffix, shown while plugged in (when charging heat is the concern).
-        let tempSuffix = b.temperatureC > 0
-            ? " · \(hot ? "🌡️" : "")\(fahrenheit(b.temperatureC))°F"
-            : ""
+        let tempStr = b.temperatureC > 0 ? "\(hot ? "🌡️" : "")\(fahrenheit(b.temperatureC))°F" : ""
+
         if !b.pluggedIn {
-            if b.minutesToEmpty >= 0 {
-                title = "🔋 \(b.percent)% · \(formatTime(b.minutesToEmpty)) left"
-            } else {
-                title = "🔋 \(b.percent)%"
-            }
-        } else if b.fullyCharged || (b.percent >= 100) {
-            title = "⚡ Full · \(b.percent)%\(tempSuffix)"
-        } else if !b.charging && sustainedPause {
-            // Charging has genuinely stopped for a sustained stretch (thermal hold,
-            // optimized charging, etc.) — surface it so a real stall is visible.
-            title = "⏸ \(b.percent)% paused\(tempSuffix)"
-        } else if !b.charging {
-            // Brief not-charging trough within normal pulsed charging — stay calm.
-            title = "🔌 \(b.percent)%\(tempSuffix)"
+            // On battery: %, time remaining, temp.
+            var parts = ["🔋 \(b.percent)%"]
+            if b.minutesToEmpty >= 0 { parts.append("\(formatTime(b.minutesToEmpty)) left") }
+            if !tempStr.isEmpty { parts.append(tempStr) }
+            title = parts.joined(separator: " · ")
         } else {
-            let eta = b.minutesToFull >= 0 ? formatTime(b.minutesToFull) : "--:--"
-            title = "⚡ \(chargeW)/\(chargerW)W · \(eta) · \(b.percent)%\(tempSuffix)"
+            // Plugged in: charging watts / charger watts · time-to-full · % · temp — always.
+            let glyph: String
+            let eta: String
+            if b.fullyCharged || b.percent >= 100 {
+                glyph = "⚡"; eta = "0:00"
+            } else if b.charging {
+                glyph = "⚡"; eta = b.minutesToFull >= 0 ? formatTime(b.minutesToFull) : "--:--"
+            } else if sustainedPause {
+                glyph = "⏸"; eta = "--:--"
+            } else {
+                glyph = "🔌"; eta = "--:--"
+            }
+            var parts = ["\(glyph) \(chargeW)/\(chargerW)W", eta, "\(b.percent)%"]
+            if !tempStr.isEmpty { parts.append(tempStr) }
+            title = parts.joined(separator: " · ")
         }
         statusItem.button?.title = title
 

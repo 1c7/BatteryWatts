@@ -37,17 +37,17 @@ When you unplug, it switches to `🔋 82% · 3:29 left` — battery level plus t
 
 While plugged in, the readout appends the battery temperature (e.g. `… · 88°F`).
 
+All four numbers stay on screen at all times while plugged in — only the **leading glyph**
+changes to show state, so the layout never jumps around:
+
+- `⚡ 30/100W · 2:15 · 68% · 88°F` — actively charging
+- `🔌 0/100W · --:-- · 41% · 88°F` — plugged in, momentarily between charge pulses (normal)
+- `⏸ 0/100W · --:-- · 41% · 🌡️100°F` — charging genuinely stopped for a **sustained** stretch
+  (~2 min), e.g. a thermal hold or Optimized Battery Charging — the state worth noticing
+
 macOS charges the battery in **pulses** — it normally flips between charging and brief
-idle/discharge many times a minute, so a single "not charging" moment is not a real stall.
-BatteryWatts distinguishes the two:
-
-- `🔌 41%` — plugged in and momentarily not charging (a normal charging pulse). Nothing wrong.
-- `⏸ 41% paused` — charging has genuinely stopped for a **sustained** stretch (~2 min), e.g. a
-  thermal hold or Optimized Battery Charging. This is the state worth noticing.
-
-```
-⏸ 34% paused · 🌡️100°F
-```
+idle/discharge many times a minute, so a single "not charging" moment (`🔌`) is not a real
+stall. Only a sustained stop shows `⏸`.
 
 The 🌡️ appears once the battery crosses ~95°F, and the dropdown adds a
 `⚠️ warm — charging may pause` note plus the battery temperature in °F — a direct, at-a-glance
