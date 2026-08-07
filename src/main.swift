@@ -10,7 +10,8 @@ struct BatteryInfo {
     var charging: Bool = false
     var fullyCharged: Bool = false
     var percent: Int = 0
-    var chargeWatts: Double = 0      // power flowing into the battery (V * I)
+    var chargeWatts: Double = 0      // power flowing into the battery (V * I), clamped >= 0
+    var netPowerW: Double = 0        // signed battery power; negative = discharging
     var adapterWatts: Int = 0        // adapter's max rating
     var minutesToFull: Int = -1      // -1 = unknown / not charging
     var minutesToEmpty: Int = -1     // -1 = unknown / on AC power
@@ -44,10 +45,12 @@ func readBattery() -> BatteryInfo {
         info.percent = cur
     }
 
-    // Charge power into the battery: Voltage(mV) * Amperage(mA)
+    // Battery power: Voltage(mV) * Amperage(mA). Signed — positive = charging into the
+    // battery, negative = discharging (which, while plugged in, means the system load
+    // exceeds what the charger supplies). chargeWatts is the clamped charging figure.
     if let mV = props["Voltage"] as? Int, let mA = props["Amperage"] as? Int {
-        let watts = (Double(mV) / 1000.0) * (Double(mA) / 1000.0)
-        info.chargeWatts = max(0, watts)   // negative = discharging
+        info.netPowerW = (Double(mV) / 1000.0) * (Double(mA) / 1000.0)
+        info.chargeWatts = max(0, info.netPowerW)
     }
 
     // Adapter max rating
@@ -200,6 +203,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             title = parts.joined(separator: " · ")
         } else {
             // Plugged in: charging watts / charger watts · time-to-full · % · temp — always.
+            // A ⚠️ prefix flags a power-budget squeeze: the battery is draining even though
+            // it's plugged in, i.e. system load exceeds the charger's output.
+            let draining = b.netPowerW < -0.5
+            let warn = draining ? "⚠️" : ""
             let glyph: String
             let eta: String
             if b.fullyCharged || b.percent >= 100 {
@@ -211,7 +218,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 glyph = "🔌"; eta = "--:--"
             }
-            var parts = ["\(glyph) \(chargeW)/\(chargerW)W", eta, "\(b.percent)%"]
+            var parts = ["\(warn)\(glyph) \(chargeW)/\(chargerW)W", eta, "\(b.percent)%"]
             if !tempStr.isEmpty { parts.append(tempStr) }
             title = parts.joined(separator: " · ")
         }
@@ -220,8 +227,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Dropdown detail menu
         let menu = NSMenu()
         if b.pluggedIn {
+            let draining = b.netPowerW < -0.5
             if b.fullyCharged {
                 menu.addItem(makeInfo("Status: Fully charged"))
+            } else if draining {
+                menu.addItem(makeInfo(String(format: "⚠️ Draining while plugged in: %.1f W", b.netPowerW)))
+                menu.addItem(makeInfo("System load exceeds the charger's output"))
             } else if b.charging || b.chargeWatts >= 0.5 {
                 menu.addItem(makeInfo(String(format: "Charging battery at: %.1f W", b.chargeWatts)))
             } else if sustainedPause {
@@ -231,12 +242,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 menu.addItem(makeInfo("Plugged in (holding)"))
             }
             if peakAdapterWatts > 0 {
-                menu.addItem(makeInfo("Charger: \(peakAdapterWatts) W"))
+                menu.addItem(makeInfo("Charger: \(peakAdapterWatts) W max this session"))
             }
-            // The live negotiated draw differs from the charger's peak once charging
-            // tapers near full — show it so the numbers are transparent.
-            if b.adapterWatts > 0 && b.adapterWatts < peakAdapterWatts {
-                menu.addItem(makeInfo("Drawing now: \(b.adapterWatts) W (tapers as battery fills)"))
+            // Current negotiated adapter power vs the charger's peak — a low draw while the
+            // battery isn't charging is the tell-tale of a power-budget squeeze.
+            if b.adapterWatts > 0 {
+                menu.addItem(makeInfo("Charger now supplying: \(b.adapterWatts) W"))
             }
             if b.minutesToFull >= 0 && !b.fullyCharged {
                 menu.addItem(makeInfo("Time until full: \(formatTime(b.minutesToFull))"))

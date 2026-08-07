@@ -54,6 +54,25 @@ The 🌡️ appears once the battery crosses ~95°F, and the dropdown adds a
 monitor for the "it stops charging when it gets hot" problem. (If the battery is cool, a
 sustained pause is usually Optimized Battery Charging, not heat.)
 
+### Power-budget squeeze (⚠️)
+
+Heat isn't the only reason charging stalls. If your charger supplies **less power than the Mac
+is using** (a low-wattage charger, or a heavy CPU/GPU load), only the leftover trickles into the
+battery — and under enough load the battery actually **drains while plugged in**. BatteryWatts
+flags this directly: a **⚠️** appears in front of the status bar when net battery power goes
+negative, and the dropdown shows:
+
+```
+⚠️ Draining while plugged in: -3.2 W
+System load exceeds the charger's output
+Charger: 94 W max this session
+Charger now supplying: 30 W
+```
+
+This is your at-a-glance tell that the fix is a **higher-wattage charger or a lighter load**,
+not more cooling. The dropdown always shows the charger's peak capability alongside what it's
+supplying right now, so a squeeze is obvious.
+
 **System notification.** When the battery crosses the hot threshold, BatteryWatts posts a macOS
 notification ("battery reached N°F — macOS may pause charging"). It fires **once per heat
 episode** (a hysteresis band re-arms it only after the battery cools a couple of degrees below
@@ -83,6 +102,7 @@ The new value takes effect the next time the app launches (or run
 - **Time until full** when charging, **and time remaining when on battery**, using macOS's own estimates (match `pmset`).
 - **Battery temperature** with a warm-warning, and a **⏸ paused** indicator when the Mac is plugged in but has stopped charging (often thermal) — so a heat-related charging stall is visible at a glance.
 - **System notification** when the battery crosses a configurable temperature threshold (default 95°F / 35°C), fired once per heat episode.
+- **Power-budget squeeze warning** (⚠️) when the battery is draining *while plugged in* — i.e. the system is using more power than the charger supplies.
 - **Charger wattage** so you can tell a 100W brick from a 30W one at a glance.
 - **Universal binary** — runs natively on **Apple Silicon and Intel** Macs, no Rosetta.
 - **Featherweight** — a single ~100KB binary, no frameworks, no background daemons beyond one login item.
