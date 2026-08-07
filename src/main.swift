@@ -13,6 +13,8 @@ struct BatteryInfo {
     var adapterWatts: Int = 0        // adapter's max rating
     var minutesToFull: Int = -1      // -1 = unknown / not charging
     var minutesToEmpty: Int = -1     // -1 = unknown / on AC power
+    var temperatureC: Double = 0     // battery temperature in °C (0 = unknown)
+    var notChargingReason: Int = 0   // ChargerData.NotChargingReason (0 = none)
 }
 
 func readBattery() -> BatteryInfo {
@@ -61,6 +63,17 @@ func readBattery() -> BatteryInfo {
     // Time to empty on battery (minutes). 65535 means "still calculating".
     if let t = props["AvgTimeToEmpty"] as? Int, t >= 0, t < 65535 {
         info.minutesToEmpty = t
+    }
+
+    // Battery temperature. IOKit reports it in hundredths of a degree Celsius.
+    if let t = props["Temperature"] as? Int, t > 0 {
+        info.temperatureC = Double(t) / 100.0
+    }
+
+    // Why charging is inhibited, if it is (0 = no inhibit).
+    if let charger = props["ChargerData"] as? [String: Any],
+       let reason = charger["NotChargingReason"] as? Int {
+        info.notChargingReason = reason
     }
 
     return info
@@ -113,10 +126,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             defaults.removeObject(forKey: "peakAdapterWatts")
         }
 
-        // Status-bar title: charging watts · charger watts · time to full · battery %
+        // Status-bar title: charging watts · charger watts · time to full · battery % · temp
         let title: String
         let chargeW = String(format: "%.0f", b.chargeWatts)
         let chargerW = peakAdapterWatts > 0 ? "\(peakAdapterWatts)" : "—"
+        let hot = b.temperatureC >= 35            // charging tends to throttle/pause above ~35°C
+        // Temperature suffix, shown while plugged in (when charging heat is the concern).
+        let tempSuffix = b.temperatureC > 0
+            ? " · \(hot ? "🌡️" : "")\(String(format: "%.0f°C", b.temperatureC))"
+            : ""
         if !b.pluggedIn {
             if b.minutesToEmpty >= 0 {
                 title = "🔋 \(b.percent)% · \(formatTime(b.minutesToEmpty)) left"
@@ -124,10 +142,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 title = "🔋 \(b.percent)%"
             }
         } else if b.fullyCharged || (b.percent >= 100) {
-            title = "⚡ \(chargeW)/\(chargerW)W · Full · \(b.percent)%"
+            title = "⚡ Full · \(b.percent)%\(tempSuffix)"
+        } else if !b.charging {
+            // Plugged in but not charging — charging is paused (thermal hold, optimized
+            // charging, etc.). Surface it so a heat-related stall is immediately visible.
+            title = "⏸ \(b.percent)% paused\(tempSuffix)"
         } else {
             let eta = b.minutesToFull >= 0 ? formatTime(b.minutesToFull) : "--:--"
-            title = "⚡ \(chargeW)/\(chargerW)W · \(eta) · \(b.percent)%"
+            title = "⚡ \(chargeW)/\(chargerW)W · \(eta) · \(b.percent)%\(tempSuffix)"
         }
         statusItem.button?.title = title
 
@@ -139,7 +161,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             } else if b.chargeWatts >= 0.5 {
                 menu.addItem(makeInfo(String(format: "Charging battery at: %.1f W", b.chargeWatts)))
             } else {
-                menu.addItem(makeInfo("Status: Plugged in (not charging)"))
+                let warm = b.temperatureC >= 35 ? " (battery warm — likely thermal)" : ""
+                menu.addItem(makeInfo("Charging paused\(warm)"))
             }
             if peakAdapterWatts > 0 {
                 menu.addItem(makeInfo("Charger: \(peakAdapterWatts) W"))
@@ -161,6 +184,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         menu.addItem(makeInfo("Battery: \(b.percent)%"))
+        if b.temperatureC > 0 {
+            let f = b.temperatureC * 9 / 5 + 32
+            let note = b.temperatureC >= 35 ? "  ⚠️ warm — charging may pause" : ""
+            menu.addItem(makeInfo(String(format: "Battery temp: %.0f°C (%.0f°F)", b.temperatureC, f) + note))
+        }
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Quit BatteryWatts", action: #selector(quit), keyEquivalent: "q"))
         statusItem.menu = menu
