@@ -1,6 +1,7 @@
 import Cocoa
 import IOKit
 import IOKit.ps
+import UserNotifications
 
 // MARK: - Battery reading
 
@@ -100,8 +101,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let defaults = UserDefaults.standard
     var peakAdapterWatts = 0
 
+    // Temperature alerting. Fires a system notification once each time the battery
+    // crosses `hotThresholdC` (default 35°C; override with
+    // `defaults write com.jpert.batterywatts hotThresholdC 40`). A hysteresis band
+    // re-arms the alert only after it cools a couple of degrees, so it never spams.
+    var hotThresholdC = 35.0
+    var wasHot = false
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         peakAdapterWatts = defaults.integer(forKey: "peakAdapterWatts")
+        if defaults.object(forKey: "hotThresholdC") != nil {
+            let t = defaults.double(forKey: "hotThresholdC")
+            if t > 0 { hotThresholdC = t }
+        }
+        // Ask once for permission to post notifications (no-op if run as a bare binary).
+        if Bundle.main.bundleIdentifier != nil {
+            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        }
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
@@ -110,6 +126,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         timer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
             self?.refresh()
         }
+    }
+
+    func notifyHot(_ tempC: Double) {
+        guard Bundle.main.bundleIdentifier != nil else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "BatteryWatts — battery is hot"
+        content.body = String(format: "Battery reached %.0f°C (%.0f°F). macOS may pause charging until it cools down.",
+                              tempC, tempC * 9 / 5 + 32)
+        content.sound = .default
+        let req = UNNotificationRequest(identifier: "batterywatts-hot", content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(req, withCompletionHandler: nil)
     }
 
     func refresh() {
@@ -126,11 +153,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             defaults.removeObject(forKey: "peakAdapterWatts")
         }
 
+        // Edge-triggered hot alert: notify once on crossing the threshold, re-arm only
+        // after cooling ~2°C below it (hysteresis) so it fires once per heat episode.
+        if b.temperatureC > 0 {
+            if b.temperatureC >= hotThresholdC && !wasHot {
+                wasHot = true
+                notifyHot(b.temperatureC)
+            } else if wasHot && b.temperatureC < hotThresholdC - 2 {
+                wasHot = false
+            }
+        }
+
         // Status-bar title: charging watts · charger watts · time to full · battery % · temp
         let title: String
         let chargeW = String(format: "%.0f", b.chargeWatts)
         let chargerW = peakAdapterWatts > 0 ? "\(peakAdapterWatts)" : "—"
-        let hot = b.temperatureC >= 35            // charging tends to throttle/pause above ~35°C
+        let hot = b.temperatureC >= hotThresholdC // charging tends to throttle/pause when hot
         // Temperature suffix, shown while plugged in (when charging heat is the concern).
         let tempSuffix = b.temperatureC > 0
             ? " · \(hot ? "🌡️" : "")\(String(format: "%.0f°C", b.temperatureC))"
@@ -161,7 +199,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             } else if b.chargeWatts >= 0.5 {
                 menu.addItem(makeInfo(String(format: "Charging battery at: %.1f W", b.chargeWatts)))
             } else {
-                let warm = b.temperatureC >= 35 ? " (battery warm — likely thermal)" : ""
+                let warm = b.temperatureC >= hotThresholdC ? " (battery warm — likely thermal)" : ""
                 menu.addItem(makeInfo("Charging paused\(warm)"))
             }
             if peakAdapterWatts > 0 {
@@ -186,7 +224,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(makeInfo("Battery: \(b.percent)%"))
         if b.temperatureC > 0 {
             let f = b.temperatureC * 9 / 5 + 32
-            let note = b.temperatureC >= 35 ? "  ⚠️ warm — charging may pause" : ""
+            let note = b.temperatureC >= hotThresholdC ? "  ⚠️ warm — charging may pause" : ""
             menu.addItem(makeInfo(String(format: "Battery temp: %.0f°C (%.0f°F)", b.temperatureC, f) + note))
         }
         menu.addItem(NSMenuItem.separator())

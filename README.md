@@ -47,6 +47,21 @@ The 🌡️ appears once the battery crosses ~35°C, and the dropdown adds a
 `⚠️ warm — charging may pause` note plus the temperature in both °C and °F. This gives you a
 direct, at-a-glance monitor for the "it stops charging when it gets hot" problem.
 
+**System notification.** When the battery crosses the hot threshold, BatteryWatts posts a macOS
+notification ("battery reached N°C — macOS may pause charging"). It fires **once per heat
+episode** (a hysteresis band re-arms it only after the battery cools ~2°C below the threshold),
+so it never spams. The first time it runs, macOS asks permission to send notifications — click
+**Allow**. You can manage it later under **System Settings → Notifications → BatteryWatts**.
+
+The threshold defaults to **35°C**. To change it (e.g. to 40°C):
+
+```sh
+defaults write com.jpert.batterywatts hotThresholdC -int 40
+```
+
+The new value takes effect the next time the app launches (or run
+`launchctl kickstart -k gui/$(id -u)/com.jpert.batterywatts` to apply it now).
+
 > 💡 **Why the charging watts are lower than your charger's rating:** a MacBook only pulls its charger's full wattage when the battery is low *and* the system is under load. As the battery fills, charging naturally tapers — so seeing `29/100W` at 14% is completely normal. Watch it climb, then ease off as it tops up.
 >
 > 💡 **About the charger number:** macOS doesn't expose a static "nameplate" wattage — it only reports the *currently negotiated* USB-C Power Delivery wattage, which tapers as the battery fills (a 100 W charger negotiates 100 W at a low battery but only ~30 W near full; Apple's own System Information shows the same tapering value). BatteryWatts therefore **peak-holds** the highest wattage seen since you plugged in, which reflects your charger's true capability. If you plug in when the battery is already nearly full, it may briefly show a lower number until the charger ramps up — it "learns" the full figure the first time real power is drawn. The dropdown also shows the live "Drawing now" figure for full transparency.
@@ -58,6 +73,7 @@ direct, at-a-glance monitor for the "it stops charging when it gets hot" problem
 - **Live charging power** in watts — the number Apple hides from you.
 - **Time until full** when charging, **and time remaining when on battery**, using macOS's own estimates (match `pmset`).
 - **Battery temperature** with a warm-warning, and a **⏸ paused** indicator when the Mac is plugged in but has stopped charging (often thermal) — so a heat-related charging stall is visible at a glance.
+- **System notification** when the battery crosses a configurable temperature threshold (default 35°C), fired once per heat episode.
 - **Charger wattage** so you can tell a 100W brick from a 30W one at a glance.
 - **Universal binary** — runs natively on **Apple Silicon and Intel** Macs, no Rosetta.
 - **Featherweight** — a single ~100KB binary, no frameworks, no background daemons beyond one login item.
