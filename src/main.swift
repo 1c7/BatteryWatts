@@ -113,6 +113,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var hotThresholdC = 35.0
     var wasHot = false
 
+    // Managed charging pulses: a plugged-in battery normally flips between charging and
+    // brief idle/discharge (macOS charges in bursts), so a single "not charging" sample
+    // is not a real stall. Count consecutive not-charging refreshes and only surface the
+    // "⏸ paused" state once it has genuinely stopped for a sustained stretch.
+    var notChargingStreak = 0
+    let pauseAfterSeconds = 120       // ~2 min continuously not charging = a real pause
+    let refreshInterval = 5.0
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         peakAdapterWatts = defaults.integer(forKey: "peakAdapterWatts")
         if defaults.object(forKey: "hotThresholdC") != nil {
@@ -128,7 +136,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
         }
         refresh()
-        timer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] _ in
             self?.refresh()
         }
     }
@@ -156,6 +164,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             peakAdapterWatts = 0
             defaults.removeObject(forKey: "peakAdapterWatts")
         }
+
+        // Debounce charging pulses so brief not-charging troughs don't read as a stall.
+        if b.pluggedIn && !b.charging && !b.fullyCharged {
+            notChargingStreak += 1
+        } else {
+            notChargingStreak = 0
+        }
+        let sustainedPause = Double(notChargingStreak) * refreshInterval >= Double(pauseAfterSeconds)
 
         // Edge-triggered hot alert: notify once on crossing the threshold, re-arm only
         // after cooling ~2°C below it (hysteresis) so it fires once per heat episode.
@@ -185,10 +201,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         } else if b.fullyCharged || (b.percent >= 100) {
             title = "⚡ Full · \(b.percent)%\(tempSuffix)"
-        } else if !b.charging {
-            // Plugged in but not charging — charging is paused (thermal hold, optimized
-            // charging, etc.). Surface it so a heat-related stall is immediately visible.
+        } else if !b.charging && sustainedPause {
+            // Charging has genuinely stopped for a sustained stretch (thermal hold,
+            // optimized charging, etc.) — surface it so a real stall is visible.
             title = "⏸ \(b.percent)% paused\(tempSuffix)"
+        } else if !b.charging {
+            // Brief not-charging trough within normal pulsed charging — stay calm.
+            title = "🔌 \(b.percent)%\(tempSuffix)"
         } else {
             let eta = b.minutesToFull >= 0 ? formatTime(b.minutesToFull) : "--:--"
             title = "⚡ \(chargeW)/\(chargerW)W · \(eta) · \(b.percent)%\(tempSuffix)"
@@ -200,11 +219,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if b.pluggedIn {
             if b.fullyCharged {
                 menu.addItem(makeInfo("Status: Fully charged"))
-            } else if b.chargeWatts >= 0.5 {
+            } else if b.charging || b.chargeWatts >= 0.5 {
                 menu.addItem(makeInfo(String(format: "Charging battery at: %.1f W", b.chargeWatts)))
-            } else {
+            } else if sustainedPause {
                 let warm = b.temperatureC >= hotThresholdC ? " (battery warm — likely thermal)" : ""
                 menu.addItem(makeInfo("Charging paused\(warm)"))
+            } else {
+                menu.addItem(makeInfo("Plugged in (holding)"))
             }
             if peakAdapterWatts > 0 {
                 menu.addItem(makeInfo("Charger: \(peakAdapterWatts) W"))

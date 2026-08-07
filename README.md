@@ -35,17 +35,24 @@ When you unplug, it switches to `🔋 82% · 3:29 left` — battery level plus t
 
 ### Temperature & charging pauses
 
-While plugged in, the readout appends the battery temperature (e.g. `… · 88°F`). If the Mac
-is plugged in but **not** charging — which commonly happens when the battery gets **too hot**
-(macOS pauses charging to protect it) — the menu bar shows a paused indicator:
+While plugged in, the readout appends the battery temperature (e.g. `… · 88°F`).
+
+macOS charges the battery in **pulses** — it normally flips between charging and brief
+idle/discharge many times a minute, so a single "not charging" moment is not a real stall.
+BatteryWatts distinguishes the two:
+
+- `🔌 41%` — plugged in and momentarily not charging (a normal charging pulse). Nothing wrong.
+- `⏸ 41% paused` — charging has genuinely stopped for a **sustained** stretch (~2 min), e.g. a
+  thermal hold or Optimized Battery Charging. This is the state worth noticing.
 
 ```
 ⏸ 34% paused · 🌡️100°F
 ```
 
 The 🌡️ appears once the battery crosses ~95°F, and the dropdown adds a
-`⚠️ warm — charging may pause` note plus the battery temperature in °F. This gives you a
-direct, at-a-glance monitor for the "it stops charging when it gets hot" problem.
+`⚠️ warm — charging may pause` note plus the battery temperature in °F — a direct, at-a-glance
+monitor for the "it stops charging when it gets hot" problem. (If the battery is cool, a
+sustained pause is usually Optimized Battery Charging, not heat.)
 
 **System notification.** When the battery crosses the hot threshold, BatteryWatts posts a macOS
 notification ("battery reached N°F — macOS may pause charging"). It fires **once per heat
