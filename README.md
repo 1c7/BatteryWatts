@@ -35,25 +35,27 @@ When you unplug, it switches to `🔋 82% · 3:29 left` — battery level plus t
 
 ### Temperature & charging pauses
 
-While plugged in, the readout appends the battery temperature (e.g. `… · 31°C`). If the Mac
+While plugged in, the readout appends the battery temperature (e.g. `… · 88°F`). If the Mac
 is plugged in but **not** charging — which commonly happens when the battery gets **too hot**
 (macOS pauses charging to protect it) — the menu bar shows a paused indicator:
 
 ```
-⏸ 34% paused · 🌡️38°C
+⏸ 34% paused · 🌡️100°F
 ```
 
-The 🌡️ appears once the battery crosses ~35°C, and the dropdown adds a
-`⚠️ warm — charging may pause` note plus the temperature in both °C and °F. This gives you a
+The 🌡️ appears once the battery crosses ~95°F, and the dropdown adds a
+`⚠️ warm — charging may pause` note plus the battery temperature in °F. This gives you a
 direct, at-a-glance monitor for the "it stops charging when it gets hot" problem.
 
 **System notification.** When the battery crosses the hot threshold, BatteryWatts posts a macOS
-notification ("battery reached N°C — macOS may pause charging"). It fires **once per heat
-episode** (a hysteresis band re-arms it only after the battery cools ~2°C below the threshold),
-so it never spams. The first time it runs, macOS asks permission to send notifications — click
-**Allow**. You can manage it later under **System Settings → Notifications → BatteryWatts**.
+notification ("battery reached N°F — macOS may pause charging"). It fires **once per heat
+episode** (a hysteresis band re-arms it only after the battery cools a couple of degrees below
+the threshold), so it never spams. The first time it runs, macOS asks permission to send
+notifications — click **Allow**. You can manage it later under
+**System Settings → Notifications → BatteryWatts**.
 
-The threshold defaults to **35°C**. To change it (e.g. to 40°C):
+The threshold defaults to **95°F (35°C)**. The config value is in **°C** — to change it (e.g. to
+104°F = 40°C):
 
 ```sh
 defaults write com.jpert.batterywatts hotThresholdC -int 40
@@ -73,7 +75,7 @@ The new value takes effect the next time the app launches (or run
 - **Live charging power** in watts — the number Apple hides from you.
 - **Time until full** when charging, **and time remaining when on battery**, using macOS's own estimates (match `pmset`).
 - **Battery temperature** with a warm-warning, and a **⏸ paused** indicator when the Mac is plugged in but has stopped charging (often thermal) — so a heat-related charging stall is visible at a glance.
-- **System notification** when the battery crosses a configurable temperature threshold (default 35°C), fired once per heat episode.
+- **System notification** when the battery crosses a configurable temperature threshold (default 95°F / 35°C), fired once per heat episode.
 - **Charger wattage** so you can tell a 100W brick from a 30W one at a glance.
 - **Universal binary** — runs natively on **Apple Silicon and Intel** Macs, no Rosetta.
 - **Featherweight** — a single ~100KB binary, no frameworks, no background daemons beyond one login item.

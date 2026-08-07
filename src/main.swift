@@ -86,6 +86,11 @@ func formatTime(_ minutes: Int) -> String {
     return String(format: "%d:%02d", h, m)
 }
 
+// Battery temperature is read in Celsius; we display it in Fahrenheit.
+func fahrenheit(_ celsius: Double) -> Int {
+    return Int((celsius * 9 / 5 + 32).rounded())
+}
+
 // MARK: - App
 
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -132,8 +137,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard Bundle.main.bundleIdentifier != nil else { return }
         let content = UNMutableNotificationContent()
         content.title = "BatteryWatts — battery is hot"
-        content.body = String(format: "Battery reached %.0f°C (%.0f°F). macOS may pause charging until it cools down.",
-                              tempC, tempC * 9 / 5 + 32)
+        content.body = "Battery reached \(fahrenheit(tempC))°F. macOS may pause charging until it cools down."
         content.sound = .default
         let req = UNNotificationRequest(identifier: "batterywatts-hot", content: content, trigger: nil)
         UNUserNotificationCenter.current().add(req, withCompletionHandler: nil)
@@ -171,7 +175,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let hot = b.temperatureC >= hotThresholdC // charging tends to throttle/pause when hot
         // Temperature suffix, shown while plugged in (when charging heat is the concern).
         let tempSuffix = b.temperatureC > 0
-            ? " · \(hot ? "🌡️" : "")\(String(format: "%.0f°C", b.temperatureC))"
+            ? " · \(hot ? "🌡️" : "")\(fahrenheit(b.temperatureC))°F"
             : ""
         if !b.pluggedIn {
             if b.minutesToEmpty >= 0 {
@@ -223,9 +227,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         menu.addItem(makeInfo("Battery: \(b.percent)%"))
         if b.temperatureC > 0 {
-            let f = b.temperatureC * 9 / 5 + 32
             let note = b.temperatureC >= hotThresholdC ? "  ⚠️ warm — charging may pause" : ""
-            menu.addItem(makeInfo(String(format: "Battery temp: %.0f°C (%.0f°F)", b.temperatureC, f) + note))
+            menu.addItem(makeInfo("Battery temp: \(fahrenheit(b.temperatureC))°F" + note))
         }
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Quit BatteryWatts", action: #selector(quit), keyEquivalent: "q"))
