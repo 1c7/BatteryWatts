@@ -29,8 +29,8 @@ cat > "$CONTENTS/Info.plist" <<'PLIST'
     <key>CFBundleName</key>            <string>充电功率</string>
     <key>CFBundleDisplayName</key>     <string>充电功率</string>
     <key>CFBundleIdentifier</key>      <string>com.jpert.batterywatts</string>
-    <key>CFBundleVersion</key>         <string>1.8.1</string>
-    <key>CFBundleShortVersionString</key><string>1.8.1</string>
+    <key>CFBundleVersion</key>         <string>1.8.2</string>
+    <key>CFBundleShortVersionString</key><string>1.8.2</string>
     <key>CFBundlePackageType</key>     <string>APPL</string>
     <key>CFBundleExecutable</key>      <string>BatteryWatts</string>
     <key>CFBundleIconFile</key>        <string>AppIcon</string>
