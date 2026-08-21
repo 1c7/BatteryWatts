@@ -1,259 +1,90 @@
-<div align="center">
+# 充电速度
 
-# 🔋 BatteryWatts
+> macOS 菜单栏小工具，把充电功率、充满时间、电池温度直接显示在电池图标旁边。
 
-**A tiny native macOS menu-bar app that shows live charging power right next to your battery icon.**
+## 它能告诉你什么
 
-[![Release](https://img.shields.io/github/v/release/umair-akhtar/BatteryWatts?color=brightgreen)](https://github.com/umair-akhtar/BatteryWatts/releases/latest)
-[![Platform](https://img.shields.io/badge/platform-macOS%2012%2B-lightgrey)](https://github.com/umair-akhtar/BatteryWatts)
-[![Universal](https://img.shields.io/badge/binary-universal%20(arm64%20%2B%20x86__64)-blue)](https://github.com/umair-akhtar/BatteryWatts)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![No Network](https://img.shields.io/badge/network-none-success)](https://github.com/umair-akhtar/BatteryWatts)
+macOS 自带只显示电池百分比，不会告诉你这些：
 
-</div>
+- 充电功率（瓦）是多少
+- 充电器实际能力是多少瓦
+- 还要多久充满
+- 电池温度多少
+- 是不是已经接电但 Mac 其实还在掉电
 
----
-
-macOS tells you your battery percentage — but not **how fast it's actually charging**, what your charger is capable of, or **when it'll be full**. BatteryWatts puts all of that in your menu bar in a single compact readout, updated live every few seconds.
+「充电速度」把这些数字放在菜单栏，5 秒刷新一次：
 
 ```
-⚡ 29/100W · 3:07 · 14%
+⚡ 29/100W · 3:07 · 14% · 32°C
 ```
 
-<div align="center">
+- **充电瓦** — 真正流进电池的功率（电压 × 电流）
+- **充电器瓦** — 本次插电以来充电器输出的最高值
+- **剩余时间** — 距离充满或用完的预估
+- **电量百分比**
+- **电池温度** — 过热时用 🌡️ 高亮，并发系统通知
 
-| Field | Example | Meaning |
-|:-----:|:-------:|:--------|
-| ⚡ Charging watts | `29` | Power flowing **into the battery** right now (voltage × amperage) |
-| Charger watts | `100` | Your charger's wattage — the peak it has delivered this session |
-| Time to full | `3:07` | Estimated time remaining until 100% |
-| Battery % | `14%` | Current charge level |
+拔电后自动切换到「🔋 82% · 剩余 3:29」，依然能看到电池能撑多久。
 
-</div>
+## 截图
 
-When you unplug, it switches to `🔋 82% · 3:29 left` — battery level plus the estimated time until empty. Click the icon any time for the same details spelled out in a dropdown.
+![screenshot](doc/screenshot.png)
 
-### Temperature & charging pauses
+## 安装
 
-While plugged in, the readout appends the battery temperature (e.g. `… · 88°F`).
+需要 macOS 12 及以上。系统设置里会请求一次通知权限。
 
-All four numbers stay on screen at all times while plugged in — only the **leading glyph**
-changes to show state, so the layout never jumps around:
+### 一行命令（推荐）
 
-- `⚡ 30/100W · 2:15 · 68% · 88°F` — actively charging
-- `🔌 0/100W · --:-- · 41% · 88°F` — plugged in, momentarily between charge pulses (normal)
-- `⏸ 0/100W · --:-- · 41% · 🌡️100°F` — charging genuinely stopped for a **sustained** stretch
-  (~2 min), e.g. a thermal hold or Optimized Battery Charging — the state worth noticing
-
-macOS charges the battery in **pulses** — it normally flips between charging and brief
-idle/discharge many times a minute, so a single "not charging" moment (`🔌`) is not a real
-stall. Only a sustained stop shows `⏸`.
-
-The 🌡️ appears once the battery crosses ~95°F, and the dropdown adds a
-`⚠️ warm — charging may pause` note plus the battery temperature in °F — a direct, at-a-glance
-monitor for the "it stops charging when it gets hot" problem. (If the battery is cool, a
-sustained pause is usually Optimized Battery Charging, not heat.)
-
-### Power-budget squeeze (⚠️)
-
-Heat isn't the only reason charging stalls. If your charger supplies **less power than the Mac
-is using** (a low-wattage charger, or a heavy CPU/GPU load), only the leftover trickles into the
-battery — and under enough load the battery actually **drains while plugged in**. BatteryWatts
-flags this directly: a **⚠️** appears in front of the status bar when net battery power goes
-negative, and the dropdown shows:
-
-```
-⚠️ Draining while plugged in: -3.2 W
-System load exceeds the charger's output
-Charger: 94 W max this session
-Charger now supplying: 30 W
-```
-
-This is your at-a-glance tell that the fix is a **higher-wattage charger or a lighter load**,
-not more cooling. The dropdown always shows the charger's peak capability alongside what it's
-supplying right now, so a squeeze is obvious.
-
-**System notification.** When the battery crosses the hot threshold, BatteryWatts posts a macOS
-notification ("battery reached N°F — macOS may pause charging"). It fires **once per heat
-episode** (a hysteresis band re-arms it only after the battery cools a couple of degrees below
-the threshold), so it never spams. The first time it runs, macOS asks permission to send
-notifications — click **Allow**. You can manage it later under
-**System Settings → Notifications → BatteryWatts**.
-
-The threshold defaults to **95°F (35°C)**. The config value is in **°C** — to change it (e.g. to
-104°F = 40°C):
+打开终端，粘贴：
 
 ```sh
-defaults write com.jpert.batterywatts hotThresholdC -int 40
+curl -fsSL https://raw.githubusercontent.com/1c7/BatteryWatts/main/install.sh | bash
 ```
 
-The new value takes effect the next time the app launches (or run
-`launchctl kickstart -k gui/$(id -u)/com.jpert.batterywatts` to apply it now).
+几秒后菜单栏右上角就会出现图标，并设置开机自启。
 
-> 💡 **Why the charging watts are lower than your charger's rating:** a MacBook only pulls its charger's full wattage when the battery is low *and* the system is under load. As the battery fills, charging naturally tapers — so seeing `29/100W` at 14% is completely normal. Watch it climb, then ease off as it tops up.
->
-> 💡 **About the charger number:** macOS doesn't expose a static "nameplate" wattage — it only reports the *currently negotiated* USB-C Power Delivery wattage, which tapers as the battery fills (a 100 W charger negotiates 100 W at a low battery but only ~30 W near full; Apple's own System Information shows the same tapering value). BatteryWatts therefore **peak-holds** the highest wattage seen since you plugged in, which reflects your charger's true capability. If you plug in when the battery is already nearly full, it may briefly show a lower number until the charger ramps up — it "learns" the full figure the first time real power is drawn. The dropdown also shows the live "Drawing now" figure for full transparency.
+### 手动下载
 
----
+1. 前往 [Releases](https://github.com/1c7/BatteryWatts/releases/latest) 下载 `BatteryWatts.zip`
+2. 解压后把 `BatteryWatts.app` 移到 `~/Applications`
+3. 清除隔离属性后打开：
 
-## ✨ Features
+   ```sh
+   xattr -dr com.apple.quarantine ~/Applications/BatteryWatts.app
+   open ~/Applications/BatteryWatts.app
+   ```
 
-- **Live charging power** in watts — the number Apple hides from you.
-- **Time until full** when charging, **and time remaining when on battery**, using macOS's own estimates (match `pmset`).
-- **Battery temperature** with a warm-warning, and a **⏸ paused** indicator when the Mac is plugged in but has stopped charging (often thermal) — so a heat-related charging stall is visible at a glance.
-- **System notification** when the battery crosses a configurable temperature threshold (default 95°F / 35°C), fired once per heat episode.
-- **Power-budget squeeze warning** (⚠️) when the battery is draining *while plugged in* — i.e. the system is using more power than the charger supplies.
-- **Charger wattage** so you can tell a 100W brick from a 30W one at a glance.
-- **Universal binary** — runs natively on **Apple Silicon and Intel** Macs, no Rosetta.
-- **Featherweight** — a single ~100KB binary, no frameworks, no background daemons beyond one login item.
-- **Zero network access.** It reads only local hardware telemetry. Nothing leaves your Mac. ([See how it works](#-how-it-works).)
-- **No dock icon** — lives entirely in the menu bar (`LSUIElement`).
-- **Auto-starts on login** via a per-user LaunchAgent.
+### 从源码编译
 
----
-
-## 📦 Installation
-
-### Option 1 — One command (recommended)
-
-Open **Terminal** and paste:
+需要 Xcode Command Line Tools（`xcode-select --install`）：
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/umair-akhtar/BatteryWatts/main/install.sh | bash
-```
-
-This downloads the latest release, installs it to `~/Applications`, clears the
-Gatekeeper quarantine flag so it opens without warnings, and sets it to launch on
-login. The icon appears in your menu bar within a couple of seconds. Run the same
-command on each of your Macs.
-
-### Option 2 — Download the app manually
-
-1. Grab `BatteryWatts.zip` from the [**latest release**](https://github.com/umair-akhtar/BatteryWatts/releases/latest).
-2. Unzip it and move `BatteryWatts.app` to `~/Applications` (or `/Applications`).
-3. Clear the Gatekeeper flag, then open it:
-
-```sh
-xattr -dr com.apple.quarantine ~/Applications/BatteryWatts.app
-open ~/Applications/BatteryWatts.app
-```
-
-> **Why the `xattr` step?** The app is *ad-hoc signed* (it isn't distributed through
-> a paid Apple Developer account), so anything you download through a **browser** gets
-> quarantined by Gatekeeper. Clearing the flag — or right-clicking the app and choosing
-> **Open** the first time — lets it run. The one-command installer above does this for you.
-
-### Option 3 — Build from source
-
-Requires the Swift toolchain from Xcode Command Line Tools (`xcode-select --install`):
-
-```sh
-git clone https://github.com/umair-akhtar/BatteryWatts.git
+git clone https://github.com/1c7/BatteryWatts.git
 cd BatteryWatts
-./build.sh        # compiles a universal BatteryWatts.app
-./install.sh      # installs the local build + sets up auto-start
+./build.sh     # 编译出 BatteryWatts.app
+./install.sh   # 安装到 ~/Applications 并设置自启
 ```
 
----
+## 退出
 
-## 🗑️ Uninstall
+点菜单栏图标 → 「退出充电速度」（仅本次退出）。
+
+彻底卸载：
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/umair-akhtar/BatteryWatts/main/uninstall.sh | bash
+curl -fsSL https://raw.githubusercontent.com/1c7/BatteryWatts/main/uninstall.sh | bash
 ```
 
-This stops the app, removes the LaunchAgent, and deletes `~/Applications/BatteryWatts.app`.
-Or, to quit for the current session only, click the menu-bar icon → **Quit BatteryWatts**.
-
 ---
 
-## 🔧 How it works
+详细文档：
 
-BatteryWatts reads Apple's private-but-stable `AppleSmartBattery` entry from the
-**IOKit registry** every 5 seconds and renders a string into an `NSStatusItem`. That's
-the whole app. The keys it uses:
+- [工作原理](doc/how-it-works.md)
+- [配置温度阈值](doc/configuration.md)
+- [兼容性与隐私](doc/compatibility.md)
+- [常见问题](doc/troubleshooting.md)
 
-| IOKit key | Used for |
-|-----------|----------|
-| `Voltage` (mV) × `Amperage` (mA) | Charging power in watts |
-| `AdapterDetails → Watts` | Charger's max wattage |
-| `AvgTimeToFull` (minutes) | Time until full |
-| `AppleRawCurrentCapacity` / `AppleRawMaxCapacity` | Battery percentage |
-| `ExternalConnected`, `IsCharging`, `FullyCharged` | Plugged-in / charging state |
+## 许可
 
-The same data backs `pmset -g batt` and `system_profiler SPPowerDataType`, so the
-numbers line up with what macOS reports elsewhere. All reads are **read-only**; the app
-never writes to the registry, the filesystem (beyond its own bundle), or the network.
-
-**Source:** it's one file — [`src/main.swift`](src/main.swift) (~140 lines of Swift + AppKit). Easy to read, fork, and tweak.
-
----
-
-## 🖥️ Compatibility
-
-- **macOS 12.0 (Monterey) or later**
-- **Apple Silicon (M1/M2/M3/…) and Intel** — the released binary is universal.
-- Works on MacBook Air / Pro. On desktops without a battery, the app simply won't show meaningful values.
-
-> **Notch note:** the four-field readout is a bit of text. On a notched MacBook with a
-> crowded menu bar it *could* get clipped near the notch. If that happens, open an issue —
-> a compact display mode is an easy addition.
-
----
-
-## 🔒 Privacy & Security
-
-- **No network code.** The app makes zero connections. Verify it yourself: the source has no networking imports.
-- **No data collection**, no analytics, no telemetry, no files written outside its own bundle.
-- **Read-only hardware access** through public IOKit APIs — no elevated privileges, runs as your normal user.
-- Distributed as source + a reproducible `build.sh`, so you can audit and rebuild rather than trusting a binary.
-
----
-
-## ❓ FAQ / Troubleshooting
-
-**"BatteryWatts is damaged and can't be opened" / "unidentified developer."**
-That's Gatekeeper reacting to the ad-hoc signature on a browser-downloaded copy. Fix it with:
-```sh
-xattr -dr com.apple.quarantine ~/Applications/BatteryWatts.app
-```
-(The `curl | bash` installer already does this — this only happens with manual browser downloads.)
-
-**The charging watts seem low.**
-Expected — see the note near the top. Charging power ramps up when the battery is low and tapers as it fills; it rarely equals the charger's full rating.
-
-**Nothing shows in the menu bar.**
-Make sure it's running: `pgrep -x BatteryWatts`. If empty, launch it with
-`open ~/Applications/BatteryWatts.app` or re-run the installer. On a Mac without a battery there's nothing to display.
-
-**The time-to-full says `--:--`.**
-macOS reports "still calculating" for a minute or two after you plug in. It'll fill in shortly.
-
-**Does it drain my battery?**
-Negligibly — it wakes briefly every 5 seconds to read a value and update text.
-
----
-
-## 🤝 Contributing
-
-Issues and pull requests are welcome! The whole app is one small Swift file, so it's a
-friendly place to start. Ideas that would make great contributions:
-
-- A compact / configurable display mode (choose which of the four fields to show).
-- A menu option to toggle "start at login."
-- Historical charging-rate graph in the dropdown.
-- App icon + notarization for a warning-free first launch.
-
-To hack on it: `./build.sh` to compile, then `open BatteryWatts.app` to try your changes.
-
----
-
-## 📄 License
-
-[MIT](LICENSE) — do whatever you like; attribution appreciated.
-
----
-
-<div align="center">
-<sub>Built for people who want to know what their charger is actually doing. ⚡</sub>
-</div>
+[MIT](LICENSE)

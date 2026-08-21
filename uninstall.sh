@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # BatteryWatts uninstaller.
-#   curl -fsSL https://raw.githubusercontent.com/umair-akhtar/BatteryWatts/main/uninstall.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/1c7/BatteryWatts/main/uninstall.sh | bash
 #
 set -euo pipefail
 

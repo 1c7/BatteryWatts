@@ -2,11 +2,11 @@
 #
 # BatteryWatts installer.
 # Run directly:
-#   curl -fsSL https://raw.githubusercontent.com/umair-akhtar/BatteryWatts/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/1c7/BatteryWatts/main/install.sh | bash
 #
 set -euo pipefail
 
-REPO="umair-akhtar/BatteryWatts"
+REPO="1c7/BatteryWatts"
 APP_NAME="BatteryWatts"
 APP="$APP_NAME.app"
 LABEL="com.jpert.batterywatts"
