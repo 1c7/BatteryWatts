@@ -89,11 +89,6 @@ func formatTime(_ minutes: Int) -> String {
     return String(format: "%d:%02d", h, m)
 }
 
-// Battery temperature is read in Celsius; we display it in Fahrenheit.
-func fahrenheit(_ celsius: Double) -> Int {
-    return Int((celsius * 9 / 5 + 32).rounded())
-}
-
 // MARK: - App
 
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -147,8 +142,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func notifyHot(_ tempC: Double) {
         guard Bundle.main.bundleIdentifier != nil else { return }
         let content = UNMutableNotificationContent()
-        content.title = "BatteryWatts — battery is hot"
-        content.body = "Battery reached \(fahrenheit(tempC))°F. macOS may pause charging until it cools down."
+        content.title = "充电速度 — 电池过热"
+        content.body = "电池温度达到 \(Int(tempC.rounded()))°C，macOS 可能会暂停充电直至温度下降。"
         content.sound = .default
         let req = UNNotificationRequest(identifier: "batterywatts-hot", content: content, trigger: nil)
         UNUserNotificationCenter.current().add(req, withCompletionHandler: nil)
@@ -193,12 +188,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let chargeW = String(format: "%.0f", b.chargeWatts)
         let chargerW = peakAdapterWatts > 0 ? "\(peakAdapterWatts)" : "—"
         let hot = b.temperatureC >= hotThresholdC // charging tends to throttle/pause when hot
-        let tempStr = b.temperatureC > 0 ? "\(hot ? "🌡️" : "")\(fahrenheit(b.temperatureC))°F" : ""
+        let tempStr = b.temperatureC > 0 ? "\(hot ? "🌡️" : "")\(Int(b.temperatureC.rounded()))°C" : ""
 
         if !b.pluggedIn {
             // On battery: %, time remaining, temp.
             var parts = ["🔋 \(b.percent)%"]
-            if b.minutesToEmpty >= 0 { parts.append("\(formatTime(b.minutesToEmpty)) left") }
+            if b.minutesToEmpty >= 0 { parts.append("剩余 \(formatTime(b.minutesToEmpty))") }
             if !tempStr.isEmpty { parts.append(tempStr) }
             title = parts.joined(separator: " · ")
         } else {
@@ -229,44 +224,44 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if b.pluggedIn {
             let draining = b.netPowerW < -0.5
             if b.fullyCharged {
-                menu.addItem(makeInfo("Status: Fully charged"))
+                menu.addItem(makeInfo("状态：已充满"))
             } else if draining {
-                menu.addItem(makeInfo(String(format: "⚠️ Draining while plugged in: %.1f W", b.netPowerW)))
-                menu.addItem(makeInfo("System load exceeds the charger's output"))
+                menu.addItem(makeInfo(String(format: "⚠️ 已接入电源仍在掉电：%.1f W", b.netPowerW)))
+                menu.addItem(makeInfo("系统负载超过充电器输出功率"))
             } else if b.charging || b.chargeWatts >= 0.5 {
-                menu.addItem(makeInfo(String(format: "Charging battery at: %.1f W", b.chargeWatts)))
+                menu.addItem(makeInfo(String(format: "正在充电：%.1f W", b.chargeWatts)))
             } else if sustainedPause {
-                let warm = b.temperatureC >= hotThresholdC ? " (battery warm — likely thermal)" : ""
-                menu.addItem(makeInfo("Charging paused\(warm)"))
+                let warm = b.temperatureC >= hotThresholdC ? "（电池过热，可能是热保护）" : ""
+                menu.addItem(makeInfo("充电已暂停\(warm)"))
             } else {
-                menu.addItem(makeInfo("Plugged in (holding)"))
+                menu.addItem(makeInfo("已接入电源（待机）"))
             }
             if peakAdapterWatts > 0 {
-                menu.addItem(makeInfo("Charger: \(peakAdapterWatts) W max this session"))
+                menu.addItem(makeInfo("充电器：本次最高 \(peakAdapterWatts) W"))
             }
             // Current negotiated adapter power vs the charger's peak — a low draw while the
             // battery isn't charging is the tell-tale of a power-budget squeeze.
             if b.adapterWatts > 0 {
-                menu.addItem(makeInfo("Charger now supplying: \(b.adapterWatts) W"))
+                menu.addItem(makeInfo("充电器当前输出：\(b.adapterWatts) W"))
             }
             if b.minutesToFull >= 0 && !b.fullyCharged {
-                menu.addItem(makeInfo("Time until full: \(formatTime(b.minutesToFull))"))
+                menu.addItem(makeInfo("距离充满还需：\(formatTime(b.minutesToFull))"))
             }
         } else {
-            menu.addItem(makeInfo("On battery power"))
+            menu.addItem(makeInfo("正在使用电池"))
             if b.minutesToEmpty >= 0 {
-                menu.addItem(makeInfo("Time remaining: \(formatTime(b.minutesToEmpty))"))
+                menu.addItem(makeInfo("剩余使用时间：\(formatTime(b.minutesToEmpty))"))
             } else {
-                menu.addItem(makeInfo("Time remaining: calculating…"))
+                menu.addItem(makeInfo("剩余使用时间：计算中…"))
             }
         }
-        menu.addItem(makeInfo("Battery: \(b.percent)%"))
+        menu.addItem(makeInfo("电池电量：\(b.percent)%"))
         if b.temperatureC > 0 {
-            let note = b.temperatureC >= hotThresholdC ? "  ⚠️ warm — charging may pause" : ""
-            menu.addItem(makeInfo("Battery temp: \(fahrenheit(b.temperatureC))°F" + note))
+            let note = b.temperatureC >= hotThresholdC ? "  ⚠️ 过热 — 充电可能暂停" : ""
+            menu.addItem(makeInfo("电池温度：\(Int(b.temperatureC.rounded()))°C" + note))
         }
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Quit BatteryWatts", action: #selector(quit), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "退出充电速度", action: #selector(quit), keyEquivalent: "q"))
         statusItem.menu = menu
     }
 
