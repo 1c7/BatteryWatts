@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# BatteryWatts installer.
+# 充电功率 installer.
 # Run directly:
 #   curl -fsSL https://raw.githubusercontent.com/1c7/BatteryWatts/main/install.sh | bash
 #
@@ -8,12 +8,12 @@ set -euo pipefail
 
 REPO="1c7/BatteryWatts"
 APP_NAME="BatteryWatts"
-APP="$APP_NAME.app"
+APP_BUNDLE="充电功率.app"
 LABEL="com.jpert.batterywatts"
 INSTALL_DIR="/Applications"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 
-echo "==> Installing $APP_NAME to $INSTALL_DIR (will ask for sudo password)"
+echo "==> Installing $APP_BUNDLE to $INSTALL_DIR (will ask for sudo password)"
 
 mkdir -p "$HOME/Library/LaunchAgents"
 
@@ -22,7 +22,7 @@ mkdir -p "$HOME/Library/LaunchAgents"
 #
 # Security: when invoked the documented way (`curl -fsSL .../install.sh | bash`),
 # BASH_SOURCE is empty and dirname resolves to the *current working directory*.
-# We must NOT treat a "BatteryWatts.app" sitting in the cwd as a trusted local
+# We must NOT treat a "充电功率.app" sitting in the cwd as a trusted local
 # build — an attacker could plant one in a shared/world-writable dir and have it
 # installed, re-signed, and persisted via the LaunchAgent. So the local-build path
 # is taken only when this script exists as a real file on disk next to the app.
@@ -35,15 +35,15 @@ if [ -n "$SCRIPT_SRC" ] && [ -f "$SCRIPT_SRC" ]; then
     SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_SRC")" && pwd)"
 fi
 
-if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/install.sh" ] && [ -d "$SCRIPT_DIR/$APP" ]; then
-    echo "==> Using locally built app at $SCRIPT_DIR/$APP"
-    SRC_APP="$SCRIPT_DIR/$APP"
+if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/install.sh" ] && [ -d "$SCRIPT_DIR/$APP_BUNDLE" ]; then
+    echo "==> Using locally built app at $SCRIPT_DIR/$APP_BUNDLE"
+    SRC_APP="$SCRIPT_DIR/$APP_BUNDLE"
 else
     URL="https://github.com/$REPO/releases/latest/download/$APP_NAME.zip"
     echo "==> Downloading $URL"
     curl -fsSL "$URL" -o "$TMP/$APP_NAME.zip"
     ditto -x -k "$TMP/$APP_NAME.zip" "$TMP"
-    SRC_APP="$TMP/$APP"
+    SRC_APP="$TMP/$APP_BUNDLE"
 fi
 
 # Stop any running/old instance first.
@@ -51,12 +51,12 @@ launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
 pkill -x "$APP_NAME" 2>/dev/null || true
 
 # Install into /Applications (sudo required).
-sudo rm -rf "$INSTALL_DIR/$APP"
-sudo ditto "$SRC_APP" "$INSTALL_DIR/$APP"
+sudo rm -rf "$INSTALL_DIR/$APP_BUNDLE"
+sudo ditto "$SRC_APP" "$INSTALL_DIR/$APP_BUNDLE"
 
 # Clear Gatekeeper quarantine and (re)apply an ad-hoc signature so it launches without prompts.
-sudo xattr -dr com.apple.quarantine "$INSTALL_DIR/$APP" 2>/dev/null || true
-sudo codesign --force --sign - "$INSTALL_DIR/$APP" 2>/dev/null || true
+sudo xattr -dr com.apple.quarantine "$INSTALL_DIR/$APP_BUNDLE" 2>/dev/null || true
+sudo codesign --force --sign - "$INSTALL_DIR/$APP_BUNDLE" 2>/dev/null || true
 
 # Write a LaunchAgent with the correct per-machine paths so it auto-starts on login.
 cat > "$PLIST" <<PLISTEOF
@@ -68,7 +68,7 @@ cat > "$PLIST" <<PLISTEOF
     <string>$LABEL</string>
     <key>ProgramArguments</key>
     <array>
-        <string>$INSTALL_DIR/$APP/Contents/MacOS/$APP_NAME</string>
+        <string>$INSTALL_DIR/$APP_BUNDLE/Contents/MacOS/$APP_NAME</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
@@ -81,5 +81,5 @@ PLISTEOF
 # Load it (starts the app immediately and on every login).
 launchctl bootstrap "gui/$(id -u)" "$PLIST"
 
-echo "==> Done. $APP_NAME is now in your menu bar and will start automatically on login."
+echo "==> Done. $APP_BUNDLE is now in your menu bar and will start automatically on login."
 echo "    To uninstall: curl -fsSL https://raw.githubusercontent.com/$REPO/main/uninstall.sh | bash"

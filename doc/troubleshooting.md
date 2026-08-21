@@ -5,7 +5,7 @@
 Gatekeeper 对浏览器下载的 ad-hoc 签名 App 的反应。修复：
 
 ```sh
-xattr -dr com.apple.quarantine /Applications/BatteryWatts.app
+xattr -dr com.apple.quarantine /Applications/充电功率.app
 ```
 
 一键安装脚本已经自动做这步了，只有手动从浏览器下载才会遇到。
@@ -25,7 +25,7 @@ pgrep -x BatteryWatts
 如果是空的，启动它：
 
 ```sh
-open /Applications/BatteryWatts.app
+open /Applications/充电功率.app
 ```
 
 或重跑安装脚本。没有电池的 Mac 不会显示有意义的数字。

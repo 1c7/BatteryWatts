@@ -1,7 +1,8 @@
 # Build output
-BatteryWatts.app/
+*.app/
 *.o
 *.swiftmodule
+src/AppIcon.iconset/
 
 # macOS
 .DS_Store

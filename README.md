@@ -47,12 +47,12 @@ curl -fsSL https://raw.githubusercontent.com/1c7/BatteryWatts/main/install.sh | 
 ### 手动下载
 
 1. 前往 [Releases](https://github.com/1c7/BatteryWatts/releases/latest) 下载 `BatteryWatts.zip`
-2. 解压后把 `BatteryWatts.app` 移到 `/Applications`
+2. 解压后把 `充电功率.app` 移到 `/Applications`
 3. 清除隔离属性后打开：
 
    ```sh
-   xattr -dr com.apple.quarantine /Applications/BatteryWatts.app
-   open /Applications/BatteryWatts.app
+   xattr -dr com.apple.quarantine /Applications/充电功率.app
+   open /Applications/充电功率.app
    ```
 
 ### 从源码编译
@@ -62,7 +62,7 @@ curl -fsSL https://raw.githubusercontent.com/1c7/BatteryWatts/main/install.sh | 
 ```sh
 git clone https://github.com/1c7/BatteryWatts.git
 cd BatteryWatts
-./build.sh     # 编译出 BatteryWatts.app
+./build.sh     # 编译出 充电功率.app
 ./install.sh   # 安装到 /Applications 并设置自启（需要 sudo）
 ```
 
