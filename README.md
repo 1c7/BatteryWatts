@@ -1,4 +1,4 @@
-# 充电速度
+# 充电功率
 
 > macOS 菜单栏小工具，把充电功率、充满时间、电池温度直接显示在电池图标旁边。
 
@@ -12,7 +12,7 @@ macOS 自带只显示电池百分比，不会告诉你这些：
 - 电池温度多少
 - 是不是已经接电但 Mac 其实还在掉电
 
-「充电速度」把这些数字放在菜单栏，5 秒刷新一次：
+「充电功率」把这些数字放在菜单栏，5 秒刷新一次：
 
 ```
 ⚡ 29/100W · 3:07 · 14% · 32°C
@@ -47,12 +47,12 @@ curl -fsSL https://raw.githubusercontent.com/1c7/BatteryWatts/main/install.sh | 
 ### 手动下载
 
 1. 前往 [Releases](https://github.com/1c7/BatteryWatts/releases/latest) 下载 `BatteryWatts.zip`
-2. 解压后把 `BatteryWatts.app` 移到 `~/Applications`
+2. 解压后把 `BatteryWatts.app` 移到 `/Applications`
 3. 清除隔离属性后打开：
 
    ```sh
-   xattr -dr com.apple.quarantine ~/Applications/BatteryWatts.app
-   open ~/Applications/BatteryWatts.app
+   xattr -dr com.apple.quarantine /Applications/BatteryWatts.app
+   open /Applications/BatteryWatts.app
    ```
 
 ### 从源码编译
@@ -63,12 +63,12 @@ curl -fsSL https://raw.githubusercontent.com/1c7/BatteryWatts/main/install.sh | 
 git clone https://github.com/1c7/BatteryWatts.git
 cd BatteryWatts
 ./build.sh     # 编译出 BatteryWatts.app
-./install.sh   # 安装到 ~/Applications 并设置自启
+./install.sh   # 安装到 /Applications 并设置自启（需要 sudo）
 ```
 
 ## 退出
 
-点菜单栏图标 → 「退出充电速度」（仅本次退出）。
+点菜单栏图标 → 「退出充电功率」（仅本次退出）。
 
 彻底卸载：
 

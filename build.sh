@@ -22,11 +22,11 @@ cat > "$CONTENTS/Info.plist" <<'PLIST'
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleName</key>            <string>充电速度</string>
-    <key>CFBundleDisplayName</key>     <string>充电速度</string>
+    <key>CFBundleName</key>            <string>充电功率</string>
+    <key>CFBundleDisplayName</key>     <string>充电功率</string>
     <key>CFBundleIdentifier</key>      <string>com.jpert.batterywatts</string>
-    <key>CFBundleVersion</key>         <string>1.8</string>
-    <key>CFBundleShortVersionString</key><string>1.8</string>
+    <key>CFBundleVersion</key>         <string>1.8.1</string>
+    <key>CFBundleShortVersionString</key><string>1.8.1</string>
     <key>CFBundlePackageType</key>     <string>APPL</string>
     <key>CFBundleExecutable</key>      <string>BatteryWatts</string>
     <key>LSMinimumSystemVersion</key>  <string>12.0</string>

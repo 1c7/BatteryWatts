@@ -10,12 +10,12 @@ REPO="1c7/BatteryWatts"
 APP_NAME="BatteryWatts"
 APP="$APP_NAME.app"
 LABEL="com.jpert.batterywatts"
-INSTALL_DIR="$HOME/Applications"
+INSTALL_DIR="/Applications"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 
-echo "==> Installing $APP_NAME"
+echo "==> Installing $APP_NAME to $INSTALL_DIR (will ask for sudo password)"
 
-mkdir -p "$INSTALL_DIR" "$HOME/Library/LaunchAgents"
+mkdir -p "$HOME/Library/LaunchAgents"
 
 # Get the app: prefer a local build ONLY when genuinely run from a checkout, else
 # download the latest release.
@@ -50,13 +50,13 @@ fi
 launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
 pkill -x "$APP_NAME" 2>/dev/null || true
 
-# Install into ~/Applications.
-rm -rf "$INSTALL_DIR/$APP"
-ditto "$SRC_APP" "$INSTALL_DIR/$APP"
+# Install into /Applications (sudo required).
+sudo rm -rf "$INSTALL_DIR/$APP"
+sudo ditto "$SRC_APP" "$INSTALL_DIR/$APP"
 
 # Clear Gatekeeper quarantine and (re)apply an ad-hoc signature so it launches without prompts.
-xattr -dr com.apple.quarantine "$INSTALL_DIR/$APP" 2>/dev/null || true
-codesign --force --sign - "$INSTALL_DIR/$APP" 2>/dev/null || true
+sudo xattr -dr com.apple.quarantine "$INSTALL_DIR/$APP" 2>/dev/null || true
+sudo codesign --force --sign - "$INSTALL_DIR/$APP" 2>/dev/null || true
 
 # Write a LaunchAgent with the correct per-machine paths so it auto-starts on login.
 cat > "$PLIST" <<PLISTEOF

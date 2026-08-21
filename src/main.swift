@@ -142,7 +142,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func notifyHot(_ tempC: Double) {
         guard Bundle.main.bundleIdentifier != nil else { return }
         let content = UNMutableNotificationContent()
-        content.title = "充电速度 — 电池过热"
+        content.title = "充电功率 — 电池过热"
         content.body = "电池温度达到 \(Int(tempC.rounded()))°C，macOS 可能会暂停充电直至温度下降。"
         content.sound = .default
         let req = UNNotificationRequest(identifier: "batterywatts-hot", content: content, trigger: nil)
@@ -261,7 +261,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(makeInfo("电池温度：\(Int(b.temperatureC.rounded()))°C" + note))
         }
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "退出充电速度", action: #selector(quit), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "退出充电功率", action: #selector(quit), keyEquivalent: "q"))
         statusItem.menu = menu
     }
 

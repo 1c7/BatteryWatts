@@ -9,9 +9,9 @@ APP_NAME="BatteryWatts"
 LABEL="com.jpert.batterywatts"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 
-echo "==> Uninstalling $APP_NAME"
+echo "==> Uninstalling $APP_NAME (will ask for sudo password)"
 launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
 pkill -x "$APP_NAME" 2>/dev/null || true
 rm -f "$PLIST"
-rm -rf "$HOME/Applications/$APP_NAME.app"
+sudo rm -rf "/Applications/$APP_NAME.app"
 echo "==> Removed. (The menu-bar icon disappears once the app stops.)"
