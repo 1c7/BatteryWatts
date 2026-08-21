@@ -32,7 +32,7 @@
 
 ## 实现
 
-App 是一个 Swift 单文件 [`src/main.swift`](../src/main.swift)，每 5 秒读一次 IOKit 注册表里的 `AppleSmartBattery`，把字符串画到 `NSStatusItem`。读到的字段：
+App 是一个 Swift 单文件 [`src/main.swift`](../src/main.swift)，每 1 秒读一次 IOKit 注册表里的 `AppleSmartBattery`（启动时缓存 service handle），把字符串画到 `NSStatusItem`。读到的字段：
 
 | IOKit 键 | 用途 |
 |---|---|
